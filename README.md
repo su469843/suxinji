@@ -1,97 +1,139 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# 速记星 - AI智能英语单词学习应用
 
-# Getting Started
+一个基于React Native开发的英语单词学习应用，集成了AI记忆助手，帮助用户更高效地记忆英语单词。
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## 功能特点
 
-## Step 1: Start Metro
+- 📚 **单词学习** - 卡片式学习界面，支持音频播放
+- 📖 **单词本管理** - 搜索、分类、进度追踪
+- 🔄 **智能复习** - 基于遗忘曲线的复习系统
+- 🤖 **AI记忆助手** - 智能记忆技巧、例句生成、学习计划
+- 👤 **个人中心** - 学习统计、成就系统
+- 💾 **数据持久化** - 本地存储，学习进度不丢失
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+## 技术栈
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+- **React Native** - 跨平台移动应用开发
+- **TypeScript** - 类型安全的JavaScript
+- **React Navigation** - 导航管理
+- **AsyncStorage** - 本地数据存储
+- **Linear Gradient** - 渐变效果
+- **Vector Icons** - 图标库
+- **AI Integration** - DeepSeek API集成
 
-```sh
-# Using npm
-npm start
+## 安装和运行
 
-# OR using Yarn
-yarn start
+### 环境要求
+
+- Node.js >= 16
+- React Native CLI
+- Android Studio / Xcode
+
+### 安装步骤
+
+1. 克隆项目
+```bash
+git clone https://github.com/your-username/EnglishFlashcardApp.git
+cd EnglishFlashcardApp
 ```
 
-## Step 2: Build and run your app
+2. 安装依赖
+```bash
+npm install
+# 或
+yarn install
+```
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+3. 配置环境变量
+```bash
+cp .env.example .env
+# 编辑 .env 文件，填入你的API密钥
+```
 
-### Android
-
-```sh
-# Using npm
+4. 运行应用
+```bash
+# Android
 npm run android
 
-# OR using Yarn
-yarn android
-```
-
-### iOS
-
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
-```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
+# iOS
 npm run ios
-
-# OR using Yarn
-yarn ios
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+## 环境变量配置
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+创建 `.env` 文件并配置以下变量：
 
-## Step 3: Modify your app
+```env
+# AI服务配置
+AI_API_KEY=your_openrouter_api_key_here
+AI_BASE_URL=https://openrouter.ai/api/v1
+AI_MODEL=deepseek/deepseek-chat-v3.1:free
+```
 
-Now that you have successfully run the app, let's make changes!
+### 获取API密钥
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+1. 访问 [OpenRouter](https://openrouter.ai/)
+2. 注册账户并获取API密钥
+3. 将密钥填入 `.env` 文件的 `AI_API_KEY` 变量
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+## 项目结构
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+```
+src/
+├── components/        # 可复用组件
+│   └── FlashCard.tsx
+├── screens/          # 界面组件
+│   ├── LearningScreen.tsx
+│   ├── WordBookScreen.tsx
+│   ├── ReviewScreen.tsx
+│   ├── AIAssistantScreen.tsx
+│   └── ProfileScreen.tsx
+├── services/         # 服务层
+│   ├── AIService.ts
+│   ├── AudioService.ts
+│   └── StorageService.ts
+├── hooks/           # 自定义Hooks
+│   └── useStorage.ts
+├── navigation/      # 导航配置
+│   └── AppNavigator.tsx
+├── types/           # TypeScript类型定义
+│   └── index.ts
+└── data/           # 模拟数据
+    └── mockData.ts
+```
 
-## Congratulations! :tada:
+## AI功能说明
 
-You've successfully run and modified your React Native App. :partying_face:
+### AI记忆助手
 
-### Now what?
+- **记忆技巧生成** - 为每个单词提供个性化的记忆方法
+- **例句生成** - 根据用户水平生成合适的例句
+- **学习计划制定** - 基于学习数据智能推荐学习计划
+- **实时对话** - 支持自然语言交互，解答学习疑问
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+### API集成
 
-# Troubleshooting
+应用集成了DeepSeek API，提供智能学习辅助功能。如果没有API密钥，应用会使用模拟响应用于演示。
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+## 贡献指南
 
-# Learn More
+1. Fork 项目
+2. 创建功能分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 打开 Pull Request
 
-To learn more about React Native, take a look at the following resources:
+## 许可证
 
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
+
+## 联系方式
+
+如有问题或建议，请通过以下方式联系：
+
+- 提交 Issue
+- 发送邮件至 your-email@example.com
+
+---
+
+**注意**: 请确保不要将包含真实API密钥的 `.env` 文件提交到版本控制系统。"# suxinji" 
