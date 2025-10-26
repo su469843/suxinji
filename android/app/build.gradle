@@ -97,12 +97,12 @@ android {
             def keystoreFile = System.getenv('ANDROID_KEYSTORE_FILE') ?: 'debug.keystore'
             def keystorePassword = System.getenv('ANDROID_KEYSTORE_PASSWORD') ?: 'android'
             def keyAliasValue = System.getenv('ANDROID_KEY_ALIAS') ?: 'androiddebugkey'
-            def keyPassword = System.getenv('ANDROID_KEY_PASSWORD') ?: 'android'
+            def keyPasswordValue = System.getenv('ANDROID_KEY_PASSWORD') ?: 'android'
             
             storeFile file(keystoreFile)
             storePassword keystorePassword
             keyAlias keyAliasValue
-            keyPassword keyPassword
+            keyPassword keyPasswordValue
         }
     }
     buildTypes {
