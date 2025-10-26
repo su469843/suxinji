@@ -92,15 +92,25 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        release {
+            // 使用环境变量或默认的debug签名
+            def keystoreFile = System.getenv('ANDROID_KEYSTORE_FILE') ?: 'debug.keystore'
+            def keystorePassword = System.getenv('ANDROID_KEYSTORE_PASSWORD') ?: 'android'
+            def keyAlias = System.getenv('ANDROID_KEY_ALIAS') ?: 'androiddebugkey'
+            def keyPassword = System.getenv('ANDROID_KEY_PASSWORD') ?: 'android'
+            
+            storeFile file(keystoreFile)
+            storePassword keystorePassword
+            keyAlias keyAlias
+            keyPassword keyPassword
+        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }

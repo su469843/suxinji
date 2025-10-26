@@ -10,6 +10,11 @@ on:
 env:
   NODE_VERSION: '20.19.4'
   JAVA_VERSION: '17'
+  # 签名配置 - 如果设置了环境变量则使用正式签名，否则使用测试签名
+  ANDROID_KEYSTORE_FILE: ${{ secrets.ANDROID_KEYSTORE_FILE || 'debug.keystore' }}
+  ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD || 'android' }}
+  ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS || 'androiddebugkey' }}
+  ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD || 'android' }}
 
 jobs:
   build-android:
@@ -43,17 +48,39 @@ jobs:
         npm ci
         # 如果使用Jetifier（旧版本React Native）
         # npx jetify
+    
+    - name: Setup Android Signing
+      run: |
+        echo "设置Android签名配置..."
+        if [ -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
+          echo "检测到正式签名配置，使用正式签名..."
+          # 解码Base64格式的keystore文件
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/release.keystore
+          # 检查文件是否成功创建
+          ls -la android/app/release.keystore
+        else
+          echo "未检测到正式签名配置，使用测试签名..."
+          echo "使用默认的debug.keystore进行构建"
+        fi
       
     - name: Build Android APK
       run: |
         cd android
-        ./gradlew clean assembleDebug --no-daemon
+        if [ -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
+          echo "构建正式版本APK..."
+          ./gradlew clean assembleRelease --no-daemon
+        else
+          echo "构建调试版本APK..."
+          ./gradlew clean assembleDebug --no-daemon
+        fi
       
     - name: Upload APK artifact
       uses: actions/upload-artifact@v4
       with:
-        name: android-debug-apk
-        path: android/app/build/outputs/apk/debug/*.apk
+        name: android-apk
+        path: |
+          android/app/build/outputs/apk/debug/*.apk
+          android/app/build/outputs/apk/release/*.apk
         retention-days: 30
         
     - name: Upload build artifacts
