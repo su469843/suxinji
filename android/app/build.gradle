@@ -96,12 +96,12 @@ android {
             // 使用环境变量或默认的debug签名
             def keystoreFile = System.getenv('ANDROID_KEYSTORE_FILE') ?: 'debug.keystore'
             def keystorePassword = System.getenv('ANDROID_KEYSTORE_PASSWORD') ?: 'android'
-            def keyAlias = System.getenv('ANDROID_KEY_ALIAS') ?: 'androiddebugkey'
+            def keyAliasValue = System.getenv('ANDROID_KEY_ALIAS') ?: 'androiddebugkey'
             def keyPassword = System.getenv('ANDROID_KEY_PASSWORD') ?: 'android'
             
             storeFile file(keystoreFile)
             storePassword keystorePassword
-            keyAlias keyAlias
+            keyAlias keyAliasValue
             keyPassword keyPassword
         }
     }
