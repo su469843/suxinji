@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -14,7 +14,6 @@ import FlashCard from '../components/FlashCard';
 import AudioService from '../services/AudioService';
 import AIService from '../services/AIService';
 import { useWords, useUser, useLearningProgress } from '../hooks/useStorage';
-import { Word } from '../types';
 
 const LearningScreen: React.FC = () => {
   const { words, loading: wordsLoading } = useWords();
@@ -65,7 +64,7 @@ const LearningScreen: React.FC = () => {
           technique,
           [{ text: '太棒了！' }]
         );
-      } catch (error) {
+      } catch {
         Alert.alert(
           '提示',
           '暂时无法获取AI记忆技巧，请稍后再试。',

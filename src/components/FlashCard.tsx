@@ -6,7 +6,6 @@ import {
   StyleSheet,
   Animated,
 } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { Word } from '../types';
 
@@ -50,17 +49,8 @@ const FlashCard: React.FC<FlashCardProps> = ({
     outputRange: ['0deg', '180deg'],
   });
 
-  const backInterpolate = flipAnimation.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['180deg', '0deg'],
-  });
-
   const frontAnimatedStyle = {
     transform: [{ rotateY: frontInterpolate }],
-  };
-
-  const backAnimatedStyle = {
-    transform: [{ rotateY: backInterpolate }],
   };
 
   return (
@@ -113,7 +103,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   cardContainer: {
-    perspective: 1000,
+    // perspective is not supported in React Native StyleSheet
   },
   card: {
     width: 320,

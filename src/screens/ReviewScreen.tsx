@@ -5,18 +5,13 @@ import {
   StyleSheet,
   StatusBar,
   TouchableOpacity,
-  Dimensions,
   ActivityIndicator,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useUser, useReviewProgress, useWords } from '../hooks/useStorage';
 
-const { width } = Dimensions.get('window');
 const circleSize = 200;
 const strokeWidth = 20;
-const radius = (circleSize - strokeWidth) / 2;
-const circumference = radius * 2 * Math.PI;
 
 const ReviewScreen: React.FC = () => {
   const { user, loading: userLoading } = useUser();
@@ -29,7 +24,6 @@ const ReviewScreen: React.FC = () => {
   const wordsToReview = words.filter(word => word.status === 'learning' || word.difficulty === 'hard');
   const totalWordsToReview = Math.max(wordsToReview.length, 20); // Minimum 20 for demo
   const progress = totalWordsToReview > 0 ? reviewProgress.todayReviewed / totalWordsToReview : 0;
-  const strokeDashoffset = circumference - progress * circumference;
 
   const handleStartReview = () => {
     console.log('Start review session');
@@ -74,16 +68,8 @@ const ReviewScreen: React.FC = () => {
               <View 
                 style={[
                   styles.progressTrack, 
-                  {
-                    width: circleSize,
-                    height: circleSize,
-                    borderRadius: circleSize / 2,
-                    borderTopColor: 'transparent',
-                    borderRightColor: 'transparent',
-                    borderBottomColor: 'transparent',
-                    borderLeftColor: '#4facfe',
-                    transform: [{ rotate: `${progress * 360}deg` }],
-                  }
+                  styles.progressTrackActive,
+                  { transform: [{ rotate: `${progress * 360}deg` }] }
                 ]} 
               />
             </View>
@@ -202,6 +188,15 @@ const styles = StyleSheet.create({
   progressTrack: {
     position: 'absolute',
     borderWidth: strokeWidth,
+  },
+  progressTrackActive: {
+    width: circleSize,
+    height: circleSize,
+    borderRadius: circleSize / 2,
+    borderTopColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderBottomColor: 'transparent',
+    borderLeftColor: '#4facfe',
   },
   progressPercentage: {
     fontSize: 36,
