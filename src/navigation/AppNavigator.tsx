@@ -12,34 +12,36 @@ const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
 const TabNavigator = () => {
+  const getTabBarIcon = (routeName: string, color: string, size: number) => {
+    let iconName: string;
+
+    switch (routeName) {
+      case 'Learning':
+        iconName = 'school';
+        break;
+      case 'WordBook':
+        iconName = 'book';
+        break;
+      case 'Review':
+        iconName = 'repeat';
+        break;
+      case 'AIAssistant':
+        iconName = 'smart-toy';
+        break;
+      case 'Profile':
+        iconName = 'person';
+        break;
+      default:
+        iconName = 'help';
+    }
+
+    return <Icon name={iconName} size={size} color={color} />;
+  };
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
-          let iconName: string;
-
-          switch (route.name) {
-            case 'Learning':
-              iconName = 'school';
-              break;
-            case 'WordBook':
-              iconName = 'book';
-              break;
-            case 'Review':
-              iconName = 'repeat';
-              break;
-            case 'AIAssistant':
-              iconName = 'smart-toy';
-              break;
-            case 'Profile':
-              iconName = 'person';
-              break;
-            default:
-              iconName = 'help';
-          }
-
-          return <Icon name={iconName} size={size} color={color} />;
-        },
+        tabBarIcon: ({ color, size }) => getTabBarIcon(route.name, color, size),
         tabBarActiveTintColor: '#4facfe',
         tabBarInactiveTintColor: '#666',
         tabBarStyle: {
