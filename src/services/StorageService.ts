@@ -7,7 +7,10 @@ const STORAGE_KEYS = {
   USER_STATS: '@english_flashcard_user_stats',
   LEARNING_PROGRESS: '@english_flashcard_learning_progress',
   REVIEW_PROGRESS: '@english_flashcard_review_progress',
+  USER_AGREEMENT_ACCEPTED_VERSION: '@english_flashcard_user_agreement_accepted_version',
 };
+
+export const AGREEMENT_VERSION = '1';
 
 class StorageService {
   // Word operations
@@ -191,6 +194,28 @@ class StorageService {
       });
     } catch (e) {
       console.error('Error updating review progress:', e);
+    }
+  }
+
+  async getUserAgreementAcceptedVersion(): Promise<string | null> {
+    try {
+      return await AsyncStorage.getItem(
+        STORAGE_KEYS.USER_AGREEMENT_ACCEPTED_VERSION,
+      );
+    } catch (e) {
+      console.error('Error loading user agreement acceptance:', e);
+      return null;
+    }
+  }
+
+  async setUserAgreementAcceptedVersion(version: string): Promise<void> {
+    try {
+      await AsyncStorage.setItem(
+        STORAGE_KEYS.USER_AGREEMENT_ACCEPTED_VERSION,
+        version,
+      );
+    } catch (e) {
+      console.error('Error saving user agreement acceptance:', e);
     }
   }
 

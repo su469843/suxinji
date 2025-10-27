@@ -5,21 +5,33 @@
  * @format
  */
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { StatusBar } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import AppNavigator from './src/navigation/AppNavigator';
-import { useAppInitialization } from './src/hooks/useStorage';
+import { useAppInitialization, useUserAgreementStatus } from './src/hooks/useStorage';
 
 function AppContent() {
-  const { isInitialized, loading } = useAppInitialization();
+  const { isInitialized, loading: initLoading } = useAppInitialization();
+  const {
+    hasAcceptedCurrentVersion,
+    loading: agreementLoading,
+    acceptAgreement,
+  } = useUserAgreementStatus();
 
-  if (loading) {
-    return null; // Or a loading screen
+  if (initLoading || agreementLoading || !isInitialized) {
+    return null;
   }
 
-  return <AppNavigator />;
+  const needsAgreement = !hasAcceptedCurrentVersion;
+
+  return (
+    <AppNavigator
+      needsAgreement={needsAgreement}
+      onAgreementAccepted={acceptAgreement}
+    />
+  );
 }
 
 function App() {

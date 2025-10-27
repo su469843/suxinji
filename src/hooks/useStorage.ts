@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import StorageService from '../services/StorageService';
+import StorageService, { AGREEMENT_VERSION } from '../services/StorageService';
 import { Word, User } from '../types';
 
 export const useWords = () => {
@@ -237,5 +237,43 @@ export const useAppInitialization = () => {
     isInitialized,
     loading,
     resetApp,
+  };
+};
+
+export const useUserAgreementStatus = () => {
+  const [acceptedVersion, setAcceptedVersion] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const loadStatus = async () => {
+    try {
+      setLoading(true);
+      const version = await StorageService.getUserAgreementAcceptedVersion();
+      setAcceptedVersion(version);
+    } catch (error) {
+      console.error('Error loading user agreement status:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadStatus();
+  }, []);
+
+  const acceptAgreement = async () => {
+    try {
+      await StorageService.setUserAgreementAcceptedVersion(AGREEMENT_VERSION);
+      setAcceptedVersion(AGREEMENT_VERSION);
+    } catch (error) {
+      console.error('Error saving user agreement status:', error);
+    }
+  };
+
+  return {
+    acceptedVersion,
+    hasAcceptedCurrentVersion: acceptedVersion === AGREEMENT_VERSION,
+    loading,
+    acceptAgreement,
+    refreshStatus: loadStatus,
   };
 };

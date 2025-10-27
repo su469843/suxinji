@@ -16,26 +16,36 @@ interface MenuItem {
   id: string;
   title: string;
   icon: string;
+  screen?: string;
 }
 
-const ProfileScreen: React.FC = () => {
+interface ProfileScreenProps {
+  navigation?: any;
+}
+
+const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
   const { user, loading } = useUser();
   
   const menuItems: MenuItem[] = [
     { id: '1', title: '学习设置', icon: 'settings' },
     { id: '2', title: '学习报告', icon: 'assessment' },
     { id: '3', title: '提醒设置', icon: 'notifications' },
-    { id: '4', title: '关于我们', icon: 'info' },
+    { id: '4', title: '用户协议', icon: 'description', screen: 'UserAgreementView' },
+    { id: '5', title: '关于我们', icon: 'info' },
   ];
 
-  const handleMenuPress = (itemId: string) => {
-    console.log('Menu item pressed:', itemId);
+  const handleMenuPress = (item: MenuItem) => {
+    if (item.screen && navigation) {
+      navigation.navigate(item.screen);
+    } else {
+      console.log('Menu item pressed:', item.id);
+    }
   };
 
   const renderMenuItem = ({ item }: { item: MenuItem }) => (
     <TouchableOpacity
       style={styles.menuItem}
-      onPress={() => handleMenuPress(item.id)}>
+      onPress={() => handleMenuPress(item)}>
       <Text style={styles.menuText}>{item.title}</Text>
       <Icon name="chevron-right" size={20} color="#ccc" />
     </TouchableOpacity>

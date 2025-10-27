@@ -7,6 +7,7 @@ import WordBookScreen from '../screens/WordBookScreen';
 import ReviewScreen from '../screens/ReviewScreen';
 import AIAssistantScreen from '../screens/AIAssistantScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import UserAgreementScreen from '../screens/UserAgreementScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -84,10 +85,38 @@ const TabNavigator = () => {
   );
 };
 
-const AppNavigator = () => {
+interface AppNavigatorProps {
+  needsAgreement: boolean;
+  onAgreementAccepted: () => Promise<void> | void;
+}
+
+const AppNavigator: React.FC<AppNavigatorProps> = ({
+  needsAgreement,
+  onAgreementAccepted,
+}) => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
+      {needsAgreement ? (
+        <Stack.Screen name="UserAgreement">
+          {props => (
+            <UserAgreementScreen
+              {...props}
+              fromFirstLaunch
+              onAgree={onAgreementAccepted}
+            />
+          )}
+        </Stack.Screen>
+      ) : null}
       <Stack.Screen name="Main" component={TabNavigator} />
+      <Stack.Screen name="UserAgreementView">
+        {props => (
+          <UserAgreementScreen
+            {...props}
+            fromFirstLaunch={false}
+            onAgree={onAgreementAccepted}
+          />
+        )}
+      </Stack.Screen>
     </Stack.Navigator>
   );
 };
