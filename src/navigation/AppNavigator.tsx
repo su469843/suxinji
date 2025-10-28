@@ -1,4 +1,5 @@
 import React from 'react';
+import { RouteProp } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -7,9 +8,10 @@ import WordBookScreen from '../screens/WordBookScreen';
 import ReviewScreen from '../screens/ReviewScreen';
 import AIAssistantScreen from '../screens/AIAssistantScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import { MainTabParamList, AppStackParamList } from './types';
 
-const Tab = createBottomTabNavigator();
-const Stack = createStackNavigator();
+const Tab = createBottomTabNavigator<MainTabParamList>();
+const Stack = createStackNavigator<AppStackParamList>();
 
 const TabNavigator = () => {
   const getTabBarIcon = (routeName: string, color: string, size: number) => {
@@ -40,7 +42,11 @@ const TabNavigator = () => {
 
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => ({
+      screenOptions={({
+        route,
+      }: {
+        route: RouteProp<MainTabParamList, keyof MainTabParamList>;
+      }) => ({
         tabBarIcon: ({ color, size }) => getTabBarIcon(route.name, color, size),
         tabBarActiveTintColor: '#4facfe',
         tabBarInactiveTintColor: '#666',
