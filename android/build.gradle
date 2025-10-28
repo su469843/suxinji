@@ -1,9 +1,9 @@
 buildscript {
     ext {
-        buildToolsVersion = "34.0.0"  // Use available build-tools version
+        buildToolsVersion = "35.0.0"  // Use available build-tools version
         minSdkVersion = 24
-        compileSdkVersion = 34
-        targetSdkVersion = 34
+        compileSdkVersion = 35
+        targetSdkVersion = 35
         // ndkVersion = "25.1.8937393"  // Temporarily disabled for build compatibility
         kotlinVersion = "1.9.22"
     }
