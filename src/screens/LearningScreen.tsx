@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
@@ -10,15 +10,61 @@ import {
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { useNavigation } from '@react-navigation/native';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import FlashCard from '../components/FlashCard';
+import NavigationMenu, { NavigationMenuItem } from '../components/NavigationMenu';
 import AudioService from '../services/AudioService';
 import AIService from '../services/AIService';
 import { useWords, useUser, useLearningProgress } from '../hooks/useStorage';
+import { MainTabParamList } from '../navigation/types';
+
+type LearningScreenNavigationProp = BottomTabNavigationProp<MainTabParamList, 'Learning'>;
 
 const LearningScreen: React.FC = () => {
   const { words, loading: wordsLoading } = useWords();
   const { user, loading: userLoading } = useUser();
   const { progress, loading: progressLoading, updateProgress } = useLearningProgress();
+
+  const navigation = useNavigation<LearningScreenNavigationProp>();
+
+  const menuItems = useMemo<NavigationMenuItem[]>(
+    () => [
+      {
+        id: 'wordbook',
+        title: '单词本',
+        description: '管理与搜索词汇',
+        icon: 'book',
+        colors: ['#4facfe', '#00f2fe'],
+        onPress: () => navigation.navigate('WordBook'),
+      },
+      {
+        id: 'review',
+        title: '复习模式',
+        description: '巩固已学单词',
+        icon: 'repeat',
+        colors: ['#667eea', '#764ba2'],
+        onPress: () => navigation.navigate('Review'),
+      },
+      {
+        id: 'assistant',
+        title: 'AI助手',
+        description: '获取智能记忆建议',
+        icon: 'smart-toy',
+        colors: ['#ff9a9e', '#fad0c4'],
+        onPress: () => navigation.navigate('AIAssistant'),
+      },
+      {
+        id: 'profile',
+        title: '个人中心',
+        description: '查看学习数据',
+        icon: 'person',
+        colors: ['#43cea2', '#185a9d'],
+        onPress: () => navigation.navigate('Profile'),
+      },
+    ],
+    [navigation],
+  );
 
   const loading = wordsLoading || userLoading || progressLoading;
   const currentWordIndex = progress.currentWordIndex;
@@ -119,6 +165,11 @@ const LearningScreen: React.FC = () => {
         </View>
       </View>
 
+      <View style={styles.menuSection}>
+        <Text style={styles.menuTitle}>快捷导航</Text>
+        <NavigationMenu items={menuItems} />
+      </View>
+
       <View style={styles.mainContent}>
         {currentWord ? (
           <FlashCard
@@ -200,6 +251,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     marginTop: 4,
+  },
+  menuSection: {
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    backgroundColor: '#f8f9fa',
+  },
+  menuTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12,
   },
   mainContent: {
     flex: 1,
