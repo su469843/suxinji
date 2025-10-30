@@ -28,6 +28,15 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Clean duplicate icon files
+        run: |
+          cd android/app/src/main/res
+          # 删除所有重复的png文件（保留webp）
+          find . -name "ic_launcher.png" -delete
+          find . -name "ic_launcher_round.png" -delete
+          echo "清理完成，检查剩余文件："
+          find . -name "ic_launcher*" -type f
+
       - name: Validate Keystore Configuration
         shell: bash
         run: |
