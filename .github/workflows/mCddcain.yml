@@ -3,7 +3,7 @@ name: Build
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   Android:
@@ -31,52 +31,52 @@ jobs:
       - name: Validate Keystore Configuration
         shell: bash
         run: |
-          echo "🔐 验证密钥库配置..."
+          echo "Validating keystore configuration..."
           cd android
           
           # 解码密钥库文件
-          echo ${{ secrets.KEYSTORE_STORE_FILE_BASE64 }} | base64 --decode > app/temp_validate.keystore
+          echo "${{ secrets.KEYSTORE_STORE_FILE_BASE64 }}" | base64 --decode > app/temp_validate.keystore
           
           # 验证密钥库文件是否存在
           if [ ! -f "app/temp_validate.keystore" ]; then
-            echo "❌ 错误：密钥库文件解码失败"
+            echo "Error: Keystore file decoding failed"
             exit 1
           fi
           
-          echo "✅ 密钥库文件解码成功"
+          echo "Keystore file decoded successfully"
           
           # 验证密钥库密码和别名
-          echo "验证密钥库密码和别名..."
+          echo "Verifying keystore password and alias..."
           keytool -list \
             -keystore app/temp_validate.keystore \
-            -storepass '${{ secrets.KEYSTORE_PASSWORD }}' \
-            -alias '${{ secrets.KEYSTORE_KEY_ALIAS }}' > /dev/null 2>&1
+            -storepass "${{ secrets.KEYSTORE_PASSWORD }}" \
+            -alias "${{ secrets.KEYSTORE_KEY_ALIAS }}" > /dev/null 2>&1
           
           if [ $? -eq 0 ]; then
-            echo "✅ 密钥库密码和别名验证成功"
+            echo "Keystore password and alias verified successfully"
           else
-            echo "❌ 错误：密钥库密码或别名不正确"
+            echo "Error: Keystore password or alias is incorrect"
             rm -f app/temp_validate.keystore
             exit 1
           fi
           
           # 清理临时文件
           rm -f app/temp_validate.keystore
-          echo "✅ 所有密钥验证通过"
+          echo "All keystore validations passed"
 
       - name: Build Android Release
         shell: bash
         run: |
           cd android
-          echo "🏗️ 开始构建发布版本..."
-          echo ${{ secrets.KEYSTORE_STORE_FILE_BASE64 }} | base64 --decode > app/${{ secrets.KEYSTORE_STORE_FILE }}
+          echo "Building release version..."
+          echo "${{ secrets.KEYSTORE_STORE_FILE_BASE64 }}" | base64 --decode > app/"${{ secrets.KEYSTORE_STORE_FILE }}"
           ./gradlew assembleRelease \
-            -PMYAPP_UPLOAD_STORE_FILE='${{ secrets.KEYSTORE_STORE_FILE }}' \
-            -PMYAPP_UPLOAD_KEY_ALIAS='${{ secrets.KEYSTORE_KEY_ALIAS }}' \
-            -PMYAPP_UPLOAD_STORE_PASSWORD='${{ secrets.KEYSTORE_PASSWORD }}' \
-            -PMYAPP_UPLOAD_KEY_PASSWORD='${{ secrets.KEYSTORE_KEY_PASSWORD }}'
-          rm -f app/${{ secrets.KEYSTORE_STORE_FILE }}
-          echo "✅ 构建完成！"
+            -PMYAPP_UPLOAD_STORE_FILE="${{ secrets.KEYSTORE_STORE_FILE }}" \
+            -PMYAPP_UPLOAD_KEY_ALIAS="${{ secrets.KEYSTORE_KEY_ALIAS }}" \
+            -PMYAPP_UPLOAD_STORE_PASSWORD="${{ secrets.KEYSTORE_PASSWORD }}" \
+            -PMYAPP_UPLOAD_KEY_PASSWORD="${{ secrets.KEYSTORE_KEY_PASSWORD }}"
+          rm -f app/"${{ secrets.KEYSTORE_STORE_FILE }}"
+          echo "Build completed!"
 
       - name: Get package version
         run: node -p -e '`PACKAGE_VERSION=${require("./package.json").version}`' >> $GITHUB_ENV
