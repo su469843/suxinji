@@ -45,6 +45,8 @@ const LearningScreen: React.FC = () => {
     }
   };
 
+  const currentWord = words[currentWordIndex];
+
   const handleAIAssistant = async () => {
     if (currentWord) {
       try {
@@ -73,8 +75,6 @@ const LearningScreen: React.FC = () => {
       }
     }
   };
-
-  const currentWord = words[currentWordIndex];
 
   if (loading) {
     return (
