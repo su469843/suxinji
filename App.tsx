@@ -1,36 +1,25 @@
-/**
- * 速记星
- * 快速记忆英语单词的React Native应用
- *
- * @format
- */
-
 import React from 'react';
-import { StatusBar } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { NavigationContainer } from '@react-navigation/native';
-import AppNavigator from './src/navigation/AppNavigator';
-import { useAppInitialization } from './src/hooks/useStorage';
+import { View, Text, StyleSheet } from 'react-native';
 
-function AppContent() {
-  const { loading } = useAppInitialization();
-
-  if (loading) {
-    return null; // Or a loading screen
-  }
-
-  return <AppNavigator />;
-}
-
-function App() {
+const App = () => {
   return (
-    <SafeAreaProvider>
-      <NavigationContainer>
-        <StatusBar barStyle="light-content" backgroundColor="#4facfe" />
-        <AppContent />
-      </NavigationContainer>
-    </SafeAreaProvider>
+    <View style={styles.container}>
+      <Text style={styles.text}>欢迎您！应用启动成功！</Text>
+    </View>
   );
-}
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  text: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+});
 
 export default App;

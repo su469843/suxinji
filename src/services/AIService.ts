@@ -8,12 +8,12 @@ class AIService {
 
   constructor() {
     // 配置API基础URL和密钥
-    this.baseUrl = process.env.AI_BASE_URL || 'https://openrouter.ai/api/v1';
-    this.apiKey = process.env.AI_API_KEY || '';
-    this.model = process.env.AI_MODEL || 'deepseek/deepseek-chat-v3.1:free';
+    this.baseUrl = 'https://openrouter.ai/api/v1';
+    this.apiKey = ''; // 在这里填入你的API密钥，如果为空则使用模拟响应
+    this.model = 'deepseek/deepseek-chat-v3.1:free';
     
     if (!this.apiKey) {
-      console.warn('AI_API_KEY not found in environment variables. Using mock responses.');
+      console.warn('AI_API_KEY not configured. Using mock responses.');
     }
   }
 
