@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-               BuildableName = "EnglishFlashcardApp.app"
-               BlueprintName = "EnglishFlashcardApp"
-               ReferencedContainer = "container:EnglishFlashcardApp.xcodeproj">
+               BuildableName = "SpeedMemoryStar.app"
+               BlueprintName = "SpeedMemoryStar"
+               ReferencedContainer = "container:SpeedMemoryStar.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -33,9 +33,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "00E356ED1AD99517003FC87E"
-               BuildableName = "EnglishFlashcardAppTests.xctest"
-               BlueprintName = "EnglishFlashcardAppTests"
-               ReferencedContainer = "container:EnglishFlashcardApp.xcodeproj">
+               BuildableName = "SpeedMemoryStarTests.xctest"
+               BlueprintName = "SpeedMemoryStarTests"
+               ReferencedContainer = "container:SpeedMemoryStar.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -55,9 +55,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "EnglishFlashcardApp.app"
-            BlueprintName = "EnglishFlashcardApp"
-            ReferencedContainer = "container:EnglishFlashcardApp.xcodeproj">
+            BuildableName = "SpeedMemoryStar.app"
+            BlueprintName = "SpeedMemoryStar"
+            ReferencedContainer = "container:SpeedMemoryStar.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -72,9 +72,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "EnglishFlashcardApp.app"
-            BlueprintName = "EnglishFlashcardApp"
-            ReferencedContainer = "container:EnglishFlashcardApp.xcodeproj">
+            BuildableName = "SpeedMemoryStar.app"
+            BlueprintName = "SpeedMemoryStar"
+            ReferencedContainer = "container:SpeedMemoryStar.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

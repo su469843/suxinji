@@ -1,4 +1,4 @@
-package com.englishflashcardapp
+package com.speedmemorystar
 
 import android.app.Application
 import com.facebook.react.PackageList

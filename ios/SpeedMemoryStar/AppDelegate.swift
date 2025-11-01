@@ -24,7 +24,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     window = UIWindow(frame: UIScreen.main.bounds)
 
     factory.startReactNative(
-      withModuleName: "EnglishFlashcardApp",
+      withModuleName: "SpeedMemoryStar",
       in: window,
       launchOptions: launchOptions
     )
