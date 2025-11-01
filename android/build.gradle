@@ -1,9 +1,9 @@
 buildscript {
     ext {
-        buildToolsVersion = "34.0.0"  // 更新到34.0.0以支持android-34依赖
+        buildToolsVersion = "35.0.0"  // 更新到35.0.0以支持android-35依赖
         minSdkVersion = 24  // 保持24以兼容 react-native-worklets
-        compileSdkVersion = 34  // 升级到34以支持androidx依赖要求
-        targetSdkVersion = 34  // 升级到34以支持androidx依赖要求
+        compileSdkVersion = 35  // 升级到35以支持androidx.core:core:1.16.0要求
+        targetSdkVersion = 35  // 升级到35以支持androidx.core:core:1.16.0要求
         // ndkVersion = "25.1.8937393"  // Temporarily disabled for build compatibility
         kotlinVersion = "1.7.0"  // Compatible with React Native 0.82.1
     }
@@ -12,7 +12,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath("com.android.tools.build:gradle:7.4.2") // 兼容SDK 34
+        classpath("com.android.tools.build:gradle:8.1.0") // 升级到8.1.0以支持SDK 35
         classpath("com.facebook.react:react-native-gradle-plugin")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
     }
