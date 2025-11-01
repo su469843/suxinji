@@ -86,9 +86,9 @@ android {
         jvmTarget = '17'
     }
 
-    namespace "com.englishflashcardapp"
+    namespace "com.speedmemorystar"
     defaultConfig {
-        applicationId "com.englishflashcardapp"
+        applicationId "com.speedmemorystar"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
