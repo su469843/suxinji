@@ -2,7 +2,6 @@ node_modules
 dist
 dist_electron
 release
-build
 .DS_Store
 .env
 .idea

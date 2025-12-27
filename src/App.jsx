@@ -1,14 +1,39 @@
 import React, { useState, useEffect, useRef } from 'react';
 
+// --- Sidebar Components ---
+function Sidebar({ activeTab, onTabChange }) {
+    const menuItems = [
+        { id: 'downloader', icon: '⬇️', label: '下载器' },
+        { id: 'history', icon: '🕒', label: '历史记录' },
+        { id: 'settings', icon: '⚙️', label: '设置 & 关于' }
+    ];
+
+    return (
+        <div className="sidebar">
+            <div className="sidebar-title">M3U8<br /><span style={{ fontSize: '0.6em', opacity: 0.7 }}>Downloader</span></div>
+            <div className="sidebar-menu">
+                {menuItems.map(item => (
+                    <div
+                        key={item.id}
+                        className={`menu-item ${activeTab === item.id ? 'active' : ''}`}
+                        onClick={() => onTabChange(item.id)}
+                    >
+                        <span className="menu-icon">{item.icon}</span>
+                        <span className="menu-label">{item.label}</span>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+// --- Main App ---
+
 function App() {
-    const [url, setUrl] = useState('');
-    const [fileName, setFileName] = useState('');
-    const [savePath, setSavePath] = useState(''); // Empty string means default
+    const [activeTab, setActiveTab] = useState('downloader');
     const [downloads, setDownloads] = useState([]);
 
-    const downloadsRef = useRef([]);
-    downloadsRef.current = downloads;
-
+    // Global Listeners
     useEffect(() => {
         if (!window.electronAPI) return;
 
@@ -84,23 +109,6 @@ function App() {
 
     }, []);
 
-    const handleDownload = () => {
-        if (!url) return;
-        const finalName = fileName.trim() || `video_${Date.now()}`;
-        // Pass savePath (if empty/null, backend will use default)
-        window.electronAPI.startDownload({ url, fileName: finalName, savePath });
-        setUrl('');
-        setFileName('');
-        // We probably want to keep the save path persistent, so don't clear it
-    };
-
-    const handleSelectDirectory = async () => {
-        const path = await window.electronAPI.selectDirectory();
-        if (path) {
-            setSavePath(path);
-        }
-    };
-
     const handleRename = (id, newName) => {
         setDownloads(prev => prev.map(d => {
             if (d.id === id) {
@@ -112,9 +120,48 @@ function App() {
     };
 
     return (
-        <div className="container">
-            <h1>M3U8 极速下载器 (多任务版)</h1>
+        <div className="app-container">
+            <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
+            <div className="main-content">
+                {activeTab === 'downloader' && (
+                    <DownloaderView downloads={downloads} onRename={handleRename} />
+                )}
+                {activeTab === 'history' && (
+                    <HistoryView />
+                )}
+                {activeTab === 'settings' && (
+                    <SettingsView />
+                )}
+            </div>
+        </div>
+    );
+}
 
+// --- Views ---
+
+function DownloaderView({ downloads, onRename }) {
+    const [url, setUrl] = useState('');
+    const [fileName, setFileName] = useState('');
+    const [savePath, setSavePath] = useState('');
+
+    const handleDownload = () => {
+        if (!url) return;
+        const finalName = fileName.trim() || `video_${Date.now()}`;
+        window.electronAPI.startDownload({ url, fileName: finalName, savePath });
+        setUrl('');
+        setFileName('');
+    };
+
+    const handleSelectDirectory = async () => {
+        const path = await window.electronAPI.selectDirectory();
+        if (path) {
+            setSavePath(path);
+        }
+    };
+
+    return (
+        <div className="view-container">
+            <h2>新建任务</h2>
             <div className="card">
                 <div className="input-row">
                     <div className="input-group" style={{ marginBottom: '1rem' }}>
@@ -149,15 +196,138 @@ function App() {
             </div>
 
             <div className="downloads-list">
-                {downloads.length === 0 && <p style={{ textAlign: 'center', color: '#888' }}>暂无下载任务</p>}
+                {downloads.length === 0 && <p style={{ textAlign: 'center', color: '#888' }}>暂无正在进行的任务</p>}
                 {downloads.map(item => (
-                    <DownloadItem key={item.id} item={item} onRename={handleRename} />
+                    <DownloadItem key={item.id} item={item} onRename={onRename} />
                 ))}
             </div>
         </div>
     );
 }
 
+function HistoryView() {
+    const [history, setHistory] = useState([]);
+
+    useEffect(() => {
+        refreshHistory();
+    }, []);
+
+    const refreshHistory = async () => {
+        if (window.electronAPI) {
+            const list = await window.electronAPI.getHistory();
+            setHistory(list);
+        }
+    };
+
+    const clearHistory = async () => {
+        if (confirm('确定要清空所有历史记录吗？')) {
+            await window.electronAPI.clearHistory();
+            refreshHistory();
+        }
+    };
+
+    const openFolder = (path) => {
+        window.electronAPI.openFolder(path);
+    };
+
+    return (
+        <div className="view-container">
+            <div className="view-header">
+                <h2>历史记录</h2>
+                <button className="btn-small" onClick={clearHistory}>清空历史</button>
+            </div>
+
+            <div className="history-list">
+                {history.length === 0 && <p className="empty-text">暂无历史记录</p>}
+                {history.map((item, index) => (
+                    <div key={index} className="history-item">
+                        <div className="history-icon">✅</div>
+                        <div className="history-info">
+                            <div className="history-title">{item.fileName || 'Unknown File'}</div>
+                            <div className="history-path">{item.filePath}</div>
+                            <div className="history-time">{new Date(item.completedAt).toLocaleString()}</div>
+                        </div>
+                        <button className="btn-small" onClick={() => openFolder(item.filePath)}>📂 打开</button>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+function SettingsView() {
+    const [appVersion, setAppVersion] = useState('Checking...');
+    const [updateStatus, setUpdateStatus] = useState(null);
+
+    useEffect(() => {
+        window.electronAPI.getAppVersion().then(setAppVersion);
+    }, []);
+
+    const checkForUpdates = async () => {
+        setUpdateStatus({ text: '正在检查更新...', type: 'info' });
+
+        const result = await window.electronAPI.checkForUpdates();
+
+        if (result.hasUpdate) {
+            setUpdateStatus({
+                text: `发现新版本 v${result.version} !`,
+                type: 'success',
+                changelog: result.changelog || '暂无更新日志',
+                downloadUrl: result.url
+            });
+        } else {
+            setUpdateStatus({ text: '当前已是最新版本。', type: 'info' });
+        }
+    };
+
+    const handleUninstall = () => {
+        if (confirm('确定要卸载本程序吗？应用将立即关闭并启动卸载程序。')) {
+            window.electronAPI.runUninstaller();
+        }
+    };
+
+    return (
+        <div className="view-container">
+            <h2>设置 & 关于</h2>
+
+            <div className="card">
+                <h3>关于应用</h3>
+                <p>当前版本: <strong>v{appVersion}</strong></p>
+                <div className="divider"></div>
+
+                <h4>检查更新</h4>
+                <p style={{ fontSize: '0.9rem', color: '#aaa', marginBottom: '1rem' }}>
+                    应用将自动从官方源 (jsDelivr, GitHub) 检查最新版本。
+                </p>
+                <button className="btn" onClick={checkForUpdates}>
+                    检查更新
+                </button>
+
+                {updateStatus && (
+                    <div className={`update-box ${updateStatus.type}`}>
+                        <div className="update-msg">{updateStatus.text}</div>
+                        {updateStatus.hasUpdate && (
+                            <>
+                                <pre className="changelog">{updateStatus.changelog}</pre>
+                                {updateStatus.downloadUrl && (
+                                    <a href={updateStatus.downloadUrl} target="_blank" className="download-link">点击下载新版本</a>
+                                )}
+                            </>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            <div className="card" style={{ marginTop: '2rem', borderColor: 'rgba(255, 100, 100, 0.3)' }}>
+                <h3 style={{ color: '#ff6b6b' }}>危险区域</h3>
+                <p style={{ fontSize: '0.9rem', color: '#aaa' }}>需要移除应用？</p>
+                <button className="btn-danger" onClick={handleUninstall}>卸载程序</button>
+            </div>
+        </div>
+    );
+}
+
+// Reuse DownloadItem from previous code
 function DownloadItem({ item, onRename }) {
     const [showLogs, setShowLogs] = useState(false);
     const [isEditing, setIsEditing] = useState(false);

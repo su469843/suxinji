@@ -50,7 +50,8 @@ jobs:
   release:
     needs: build
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
+    # Trigger if tag OR commit message contains 'build'
+    if: startsWith(github.ref, 'refs/tags/') || contains(github.event.head_commit.message, 'build')
     
     steps:
       - name: Checkout Code
@@ -64,6 +65,8 @@ jobs:
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
+          # If triggered by commit (not tag), this will draft a release for the branch/commit
+          body_path: chenglog/chenglog.md
           files: |
             artifacts/M3U8-Downloader-windows-latest/*.exe
             artifacts/M3U8-Downloader-macos-latest/*.dmg
