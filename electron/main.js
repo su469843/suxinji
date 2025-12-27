@@ -1,0 +1,301 @@
+const { app, BrowserWindow, ipcMain, shell, dialog } = require('electron');
+const path = require('path');
+const fs = require('fs-extra');
+const axios = require('axios');
+const m3u8Parser = require('m3u8-parser');
+const ffmpeg = require('fluent-ffmpeg');
+const ffmpegPath = require('ffmpeg-static');
+const { URL } = require('url');
+
+// Set ffmpeg path
+ffmpeg.setFfmpegPath(ffmpegPath);
+
+let mainWindow;
+
+function createWindow() {
+    mainWindow = new BrowserWindow({
+        width: 1000,
+        height: 800,
+        webPreferences: {
+            preload: path.join(__dirname, 'preload.js'),
+            nodeIntegration: false,
+            contextIsolation: true,
+        },
+    });
+
+    const startUrl = process.env.ELECTRON_START_URL || 'http://localhost:5173';
+
+    if (process.env.NODE_ENV === 'development' || !app.isPackaged) {
+        mainWindow.loadURL('http://localhost:5173');
+        mainWindow.webContents.openDevTools();
+    } else {
+        mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+    }
+}
+
+app.whenReady().then(() => {
+    createWindow();
+
+    app.on('activate', () => {
+        if (BrowserWindow.getAllWindows().length === 0) {
+            createWindow();
+        }
+    });
+});
+
+app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') {
+        app.quit();
+    }
+});
+
+// IPC Handlers
+ipcMain.handle('check-env', async () => {
+    return { ffmpegPath };
+});
+
+ipcMain.on('open-folder', (event, dir) => {
+    shell.openPath(dir);
+});
+
+ipcMain.handle('select-directory', async (event) => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+        properties: ['openDirectory']
+    });
+    if (result.canceled) {
+        return null;
+    } else {
+        return result.filePaths[0];
+    }
+});
+
+// --- Download Manager Logic ---
+
+class DownloadTask {
+    constructor(id, url, fileName, savePath, sender) {
+        this.id = id;
+        this.url = url;
+        this.fileName = fileName;
+        this.savePath = savePath || app.getPath('downloads'); // Default to Downloads if null
+        this.sender = sender;
+        this.tempDir = path.join(app.getPath('userData'), 'temp_downloads', String(id));
+        this.downloadedSegments = 0;
+        this.totalSegments = 0;
+        this.downloadedBytes = 0;
+        this.lastSpeedUpdate = Date.now();
+        this.lastBytes = 0;
+    }
+
+    log(msg, type = 'info') {
+        if (!this.sender.isDestroyed()) {
+            this.sender.send('download-log', { id: this.id, text: msg, type });
+        }
+    }
+
+    progress(phase, percent, speed = '') {
+        if (!this.sender.isDestroyed()) {
+            this.sender.send('download-progress', {
+                id: this.id,
+                phase,
+                percent,
+                current: this.downloadedSegments,
+                total: this.totalSegments,
+                speed
+            });
+        }
+    }
+
+    error(msg) {
+        if (!this.sender.isDestroyed()) {
+            this.sender.send('download-error', { id: this.id, message: msg });
+        }
+    }
+
+    complete(filePath) {
+        if (!this.sender.isDestroyed()) {
+            this.sender.send('download-complete', { id: this.id, filePath });
+        }
+    }
+
+    updateFileName(newName) {
+        if (newName && newName.trim()) {
+            this.fileName = newName.trim();
+            this.log(`文件名已更新为: ${this.fileName}`);
+        }
+    }
+
+    formatSpeed(bytesPerSec) {
+        if (bytesPerSec < 1024) return bytesPerSec.toFixed(0) + ' B/s';
+        else if (bytesPerSec < 1024 * 1024) return (bytesPerSec / 1024).toFixed(1) + ' KB/s';
+        else return (bytesPerSec / (1024 * 1024)).toFixed(1) + ' MB/s';
+    }
+
+    async start() {
+        try {
+            this.log(`正在获取 M3U8: ${this.url}`);
+
+            // 1. Fetch M3U8
+            let m3u8Url = this.url;
+            const response = await axios.get(m3u8Url);
+            let manifest = await this.parseM3U8(response.data);
+
+            if (!manifest.segments || manifest.segments.length === 0) {
+                if (manifest.playlists && manifest.playlists.length > 0) {
+                    const subUrl = new URL(manifest.playlists[0].uri, m3u8Url).toString();
+                    this.log(`检测到主播放列表，自动选择第一个流: ${subUrl}`);
+                    const subRes = await axios.get(subUrl);
+                    manifest = await this.parseM3U8(subRes.data);
+                    m3u8Url = subUrl;
+
+                    if (!manifest.segments || manifest.segments.length === 0) {
+                        throw new Error('无法解析视频分片。');
+                    }
+                } else {
+                    throw new Error('无效的 M3U8 文件，未找到分片。');
+                }
+            }
+
+            // Check Encryption
+            const isEncrypted = manifest.segments.some(seg => seg.key && seg.key.method && seg.key.method !== 'NONE');
+            if (isEncrypted) {
+                throw new Error('不支持加密的视频流 (检测到 EXT-X-KEY)。');
+            }
+
+            this.totalSegments = manifest.segments.length;
+            this.log(`解析成功，共 ${this.totalSegments} 个分片。准备下载...`);
+            await fs.ensureDir(this.tempDir);
+
+            // 2. Download Segments
+            const segmentFiles = [];
+            const getSegmentUrl = (segUri) => new URL(segUri, m3u8Url).toString();
+
+            // Task queue
+            const tasks = manifest.segments.map((seg, index) => async () => {
+                const segUrl = getSegmentUrl(seg.uri);
+                const fileName = `${index}.ts`;
+                const filePath = path.join(this.tempDir, fileName);
+                segmentFiles[index] = filePath;
+
+                try {
+                    const writer = fs.createWriteStream(filePath);
+                    const response = await axios({
+                        url: segUrl,
+                        method: 'GET',
+                        responseType: 'stream'
+                    });
+
+                    // Track bytes for speed calculation
+                    response.data.on('data', (chunk) => {
+                        this.downloadedBytes += chunk.length;
+                    });
+
+                    response.data.pipe(writer);
+
+                    return new Promise((resolve, reject) => {
+                        writer.on('finish', () => {
+                            this.downloadedSegments++;
+
+                            // Calculate speed roughly every 1s or frequently enough
+                            const now = Date.now();
+                            if (now - this.lastSpeedUpdate > 500) { // Update every 500ms
+                                const diffBytes = this.downloadedBytes - this.lastBytes;
+                                const diffTime = (now - this.lastSpeedUpdate) / 1000;
+                                const speed = this.formatSpeed(diffBytes / diffTime);
+
+                                this.lastBytes = this.downloadedBytes;
+                                this.lastSpeedUpdate = now;
+
+                                const percent = Math.round((this.downloadedSegments / this.totalSegments) * 100);
+                                this.progress('downloading', percent, speed);
+                            }
+
+                            resolve();
+                        });
+                        writer.on('error', reject);
+                    });
+                } catch (err) {
+                    this.log(`分片 ${index} 下载失败: ${err.message}`, 'error');
+                    throw err;
+                }
+            });
+
+            // Run batch
+            const batchSize = 10;
+            for (let i = 0; i < tasks.length; i += batchSize) {
+                const batch = tasks.slice(i, i + batchSize).map(t => t());
+                await Promise.all(batch);
+            }
+
+            // Final progress update
+            this.progress('downloading', 100, '0 KB/s');
+
+            this.log('所有分片下载完成。开始合并...');
+            this.progress('merging', 100);
+
+            // 3. Merge
+            const fileListPath = path.join(this.tempDir, 'files.txt');
+            const fileContent = segmentFiles.map(f => `file '${f.replace(/\\/g, '/')}'`).join('\n');
+            await fs.writeFile(fileListPath, fileContent);
+
+            // Sanitize filename
+            const safeName = this.fileName.replace(/[^a-z0-9\u4e00-\u9fa5_\-\.]/gi, '_');
+            let outputFileName = `${safeName}.mp4`;
+
+            // Avoid overwrite using provided save path
+            let finalOutputPath = path.join(this.savePath, outputFileName);
+            let counter = 1;
+            while (await fs.pathExists(finalOutputPath)) {
+                finalOutputPath = path.join(this.savePath, `${safeName}_${counter}.mp4`);
+                counter++;
+            }
+
+            ffmpeg()
+                .input(fileListPath)
+                .inputOptions(['-f', 'concat', '-safe', '0'])
+                .outputOptions('-c', 'copy')
+                .output(finalOutputPath)
+                .on('end', () => {
+                    this.log(`合并完成! 文件已保存至: ${finalOutputPath}`, 'success');
+                    this.complete(finalOutputPath);
+                    fs.remove(this.tempDir).catch(console.error);
+                })
+                .on('error', (err) => {
+                    this.error(`合并失败: ${err.message}`);
+                })
+                .run();
+
+        } catch (err) {
+            this.error(`错误: ${err.message}`);
+            // console.error(err);
+        }
+    }
+
+    parseM3U8(content) {
+        return new Promise((resolve) => {
+            const parser = new m3u8Parser.Parser();
+            parser.push(content);
+            parser.end();
+            resolve(parser.manifest);
+        });
+    }
+}
+
+const activeDownloads = new Map();
+
+ipcMain.on('download-start', (event, { url, fileName, savePath }) => {
+    const id = Date.now().toString() + Math.random().toString(36).substr(2, 5);
+    const task = new DownloadTask(id, url, fileName, savePath, event.sender);
+    activeDownloads.set(id, task);
+
+    // Notify renderer that task accepted
+    event.reply('download-started', { id, url, fileName });
+
+    task.start();
+});
+
+ipcMain.on('download-rename', (event, { id, newName }) => {
+    const task = activeDownloads.get(id);
+    if (task) {
+        task.updateFileName(newName);
+    }
+});
