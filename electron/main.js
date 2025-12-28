@@ -18,7 +18,7 @@ function createWindow() {
     mainWindow = new BrowserWindow({
         width: 1000,
         height: 800,
-        frame: false, // Optional: for custom titlebar/sidebar integration look, but we'll stick to standard frame for now unless requested
+        frame: true, // Restore default frame for standard OS window controls
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
             nodeIntegration: false,
@@ -169,6 +169,41 @@ class DownloadTask {
         this.downloadedBytes = 0;
         this.lastSpeedUpdate = Date.now();
         this.lastBytes = 0;
+        this.isCancelled = false;
+        this.isPaused = false;
+        this.pausePromise = null;
+        this.pauseResolver = null;
+        this.batchResults = [];
+    }
+
+    pause() {
+        this.isPaused = true;
+        this.log('任务已暂停', 'warn');
+        this.pausePromise = new Promise(resolve => {
+            this.pauseResolver = resolve;
+        });
+    }
+
+    resume() {
+        if (this.isPaused && this.pauseResolver) {
+            this.isPaused = false;
+            this.log('任务已恢复', 'info');
+            this.pauseResolver();
+            this.pausePromise = null;
+            this.pauseResolver = null;
+        }
+    }
+
+    async checkPaused() {
+        if (this.isPaused && this.pausePromise) {
+            await this.pausePromise;
+        }
+    }
+
+    cancel() {
+        this.isCancelled = true;
+        this.resume(); // Ensure it's not stuck in pause
+        this.log('任务已手动取消', 'warn');
     }
 
     log(msg, type = 'info') {
@@ -215,6 +250,13 @@ class DownloadTask {
             this.fileName = newName.trim();
             this.log(`文件名已更新为: ${this.fileName}`);
         }
+    }
+
+    async parseM3U8(data) {
+        const parser = new m3u8Parser.Parser();
+        parser.push(data);
+        parser.end();
+        return parser.manifest;
     }
 
     formatSpeed(bytesPerSec) {
@@ -315,6 +357,11 @@ class DownloadTask {
             // Run batch
             const batchSize = 10;
             for (let i = 0; i < tasks.length; i += batchSize) {
+                await this.checkPaused();
+                if (this.isCancelled) {
+                    this.error('下载已手动取消');
+                    return;
+                }
                 const batch = tasks.slice(i, i + batchSize).map(t => t());
                 await Promise.all(batch);
             }
@@ -323,7 +370,7 @@ class DownloadTask {
             this.progress('downloading', 100, '0 KB/s');
 
             this.log('所有分片下载完成。开始合并...');
-            this.progress('merging', 100);
+            this.progress('merging', 0);
 
             // 3. Merge
             const fileListPath = path.join(this.tempDir, 'files.txt');
@@ -347,6 +394,10 @@ class DownloadTask {
                 .inputOptions(['-f', 'concat', '-safe', '0'])
                 .outputOptions('-c', 'copy')
                 .output(finalOutputPath)
+                .on('progress', (progress) => {
+                    const percent = Math.round(progress.percent || 0);
+                    this.progress('merging', percent);
+                })
                 .on('end', () => {
                     this.log(`合并完成! 文件已保存至: ${finalOutputPath}`, 'success');
                     this.complete(finalOutputPath);
@@ -387,5 +438,27 @@ ipcMain.on('download-rename', (event, { id, newName }) => {
     const task = activeDownloads.get(id);
     if (task) {
         task.updateFileName(newName);
+    }
+});
+
+ipcMain.on('download-cancel', (event, id) => {
+    const task = activeDownloads.get(id);
+    if (task) {
+        task.cancel();
+    }
+    activeDownloads.delete(id);
+});
+
+ipcMain.on('download-pause', (event, id) => {
+    const task = activeDownloads.get(id);
+    if (task) {
+        task.pause();
+    }
+});
+
+ipcMain.on('download-resume', (event, id) => {
+    const task = activeDownloads.get(id);
+    if (task) {
+        task.resume();
     }
 });

@@ -250,6 +250,11 @@ input[type="text"]:focus {
     animation: fadeIn 0.5s ease-out;
 }
 
+.item-btns {
+    display: flex;
+    gap: 0.5rem;
+}
+
 .item-header {
     display: flex;
     justify-content: space-between;

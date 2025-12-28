@@ -3,6 +3,9 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('electronAPI', {
     startDownload: (data) => ipcRenderer.send('download-start', data),
     renameDownload: (id, newName) => ipcRenderer.send('download-rename', { id, newName }),
+    cancelDownload: (id) => ipcRenderer.send('download-cancel', id),
+    pauseDownload: (id) => ipcRenderer.send('download-pause', id),
+    resumeDownload: (id) => ipcRenderer.send('download-resume', id),
     selectDirectory: () => ipcRenderer.invoke('select-directory'),
     checkEnv: () => ipcRenderer.invoke('check-env'),
 

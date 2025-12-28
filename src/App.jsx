@@ -69,7 +69,7 @@ function App() {
                     if (data.phase === 'downloading') {
                         statusText = `下载中: ${data.current} / ${data.total}`;
                     } else if (data.phase === 'merging') {
-                        statusText = '正在合并 (FFmpeg)...';
+                        statusText = `正在合并 (FFmpeg): ${data.percent}%`;
                     }
                     return {
                         ...d,
@@ -119,12 +119,39 @@ function App() {
         window.electronAPI.renameDownload(id, newName);
     };
 
+    const handleCancel = (id) => {
+        setDownloads(prev => prev.filter(d => d.id !== id));
+        window.electronAPI.cancelDownload(id);
+    };
+
+    const handlePause = (id) => {
+        setDownloads(prev => prev.map(d => {
+            if (d.id === id) return { ...d, isPaused: true, status: '已暂停' };
+            return d;
+        }));
+        window.electronAPI.pauseDownload(id);
+    };
+
+    const handleResume = (id) => {
+        setDownloads(prev => prev.map(d => {
+            if (d.id === id) return { ...d, isPaused: false, status: '恢复中...' };
+            return d;
+        }));
+        window.electronAPI.resumeDownload(id);
+    };
+
     return (
         <div className="app-container">
             <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
             <div className="main-content">
                 {activeTab === 'downloader' && (
-                    <DownloaderView downloads={downloads} onRename={handleRename} />
+                    <DownloaderView
+                        downloads={downloads}
+                        onRename={handleRename}
+                        onCancel={handleCancel}
+                        onPause={handlePause}
+                        onResume={handleResume}
+                    />
                 )}
                 {activeTab === 'history' && (
                     <HistoryView />
@@ -139,7 +166,7 @@ function App() {
 
 // --- Views ---
 
-function DownloaderView({ downloads, onRename }) {
+function DownloaderView({ downloads, onRename, onCancel, onPause, onResume }) {
     const [url, setUrl] = useState('');
     const [fileName, setFileName] = useState('');
     const [savePath, setSavePath] = useState('');
@@ -198,7 +225,14 @@ function DownloaderView({ downloads, onRename }) {
             <div className="downloads-list">
                 {downloads.length === 0 && <p style={{ textAlign: 'center', color: '#888' }}>暂无正在进行的任务</p>}
                 {downloads.map(item => (
-                    <DownloadItem key={item.id} item={item} onRename={onRename} />
+                    <DownloadItem
+                        key={item.id}
+                        item={item}
+                        onRename={onRename}
+                        onCancel={onCancel}
+                        onPause={onPause}
+                        onResume={onResume}
+                    />
                 ))}
             </div>
         </div>
@@ -328,7 +362,7 @@ function SettingsView() {
 }
 
 // Reuse DownloadItem from previous code
-function DownloadItem({ item, onRename }) {
+function DownloadItem({ item, onRename, onCancel, onPause, onResume }) {
     const [showLogs, setShowLogs] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editName, setEditName] = useState(item.title);
@@ -384,9 +418,28 @@ function DownloadItem({ item, onRename }) {
                         {item.phase === 'downloading' && <span className="speed-badge">{item.speed}</span>}
                     </div>
                 </div>
-                {item.phase === 'complete' && (
-                    <button className="btn-small p-2" onClick={openFolder}>打开文件</button>
-                )}
+                <div className="item-btns">
+                    {item.phase === 'complete' && (
+                        <button className="btn-small p-2" onClick={openFolder}>📂</button>
+                    )}
+                    {(item.phase === 'downloading' || item.phase === 'error' || item.phase === 'merging') && (
+                        <>
+                            {item.phase === 'downloading' && (
+                                <button
+                                    className="btn-small p-2"
+                                    onClick={() => item.isPaused ? onResume(item.id) : onPause(item.id)}
+                                    title={item.isPaused ? "恢复" : "暂停"}
+                                >
+                                    {item.isPaused ? '▶️' : '⏸️'}
+                                </button>
+                            )}
+                            <button className="btn-small btn-danger p-2" onClick={() => onCancel(item.id)} title="取消/移除">✕</button>
+                        </>
+                    )}
+                    {item.phase === 'complete' && (
+                        <button className="btn-small p-2" onClick={() => onCancel(item.id)} title="移除">✕</button>
+                    )}
+                </div>
             </div>
 
             <div className="progress-container-small">
