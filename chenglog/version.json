@@ -1,5 +1,4 @@
 {
-<<<<<<< HEAD
   "version": "0.2.4",
   "date": "2025-12-28",
   "notes": "No release notes provided.",
@@ -8,15 +7,5 @@
     "windows": "https://github.com/su469843/M3U8-Downloader/releases/download/v0.2.4/M3U8.Downloader.Setup.0.2.4.exe",
     "macos": "https://github.com/su469843/M3U8-Downloader/releases/download/v0.2.4/M3U8.Downloader-0.2.4.dmg",
     "linux": "https://github.com/su469843/M3U8-Downloader/releases/download/v0.2.4/M3U8.Downloader-0.2.4.AppImage"
-=======
-  "version": "0.2.3",
-  "date": "2025-12-28",
-  "notes": "No release notes provided.",
-  "url": "https://github.com/su469843/M3U8-Downloader/releases/download/v0.2.3/M3U8.Downloader.Setup.0.2.3.exe",
-  "downloads": {
-    "windows": "https://github.com/su469843/M3U8-Downloader/releases/download/v0.2.3/M3U8.Downloader.Setup.0.2.3.exe",
-    "macos": "https://github.com/su469843/M3U8-Downloader/releases/download/v0.2.3/M3U8.Downloader-0.2.3.dmg",
-    "linux": "https://github.com/su469843/M3U8-Downloader/releases/download/v0.2.3/M3U8.Downloader-0.2.3.AppImage"
->>>>>>> 9e3d0cf868b78b9ab366cc0ea57ca6f5ae847196
   }
 }
