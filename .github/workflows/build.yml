@@ -46,11 +46,39 @@ jobs:
             dist_electron/*.exe
             dist_electron/*.dmg
             dist_electron/*.zip
+            dist_electron/*.AppImage
+
+  update-version-json:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/'))
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Generate version.json
+        run: npm run generate-version
+
+      - name: Commit and Push version.json
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add chenglog/version.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: update version.json [skip ci]" && git push origin HEAD:${{ github.ref_name }})
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   release:
     needs: build
     runs-on: ubuntu-latest
-    # Trigger if tag OR commit message contains 'build'
     if: startsWith(github.ref, 'refs/tags/') || contains(github.event.head_commit.message, 'build')
     
     steps:
@@ -65,7 +93,6 @@ jobs:
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
-          # If triggered by commit (not tag), this will draft a release for the branch/commit
           body_path: chenglog/chenglog.md
           files: |
             artifacts/M3U8-Downloader-windows-latest/*.exe
