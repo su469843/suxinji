@@ -5,13 +5,13 @@ const packageJsonPath = path.join(__dirname, '../package.json');
 const changelogPath = path.join(__dirname, '../chenglog/chenglog.md');
 const versionJsonPath = path.join(__dirname, '../chenglog/version.json');
 
-const GITHUB_REPO = "su469843/M3U8-Downloader";
+const GITHUB_REPO = process.env.GITHUB_REPOSITORY || "su469843/M3U8-Downloader";
 
 try {
-    // 1. Get version from package.json
+    // 1. Get version from package.json or environment
     const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-    const version = packageJson.version;
-    console.log(`Current version: ${version}`);
+    const version = process.env.APP_VERSION || packageJson.version;
+    console.log(`Generating version info for: ${version} (Repo: ${GITHUB_REPO})`);
 
     // 2. Read changelog
     let changelogContent = '';
@@ -26,8 +26,8 @@ try {
     let notesLines = [];
     let isCurrentVersion = false;
 
-    const versionRegex = new RegExp(`^v?${version.replace(/\./g, '\\.')}\\s*$`);
-    const anyVersionRegex = /^v?\d+\.\d+\.\d+/;
+    const versionRegex = new RegExp(`^[#\\s]*v?${version.replace(/\./g, '\\.')}\\s*$`);
+    const anyVersionRegex = /^[#\s]*v?\d+\.\d+\.\d+/;
 
     for (const line of lines) {
         if (versionRegex.test(line.trim())) {
