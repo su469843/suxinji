@@ -1,11 +1,11 @@
 {
-  "version": "0.2.1",
+  "version": "0.2.3",
   "date": "2025-12-28",
-  "notes": "# 修复\n- 1.修复没有图标\n# 新增\n- 1.新增侧边栏\n\n历史版本",
-  "url": "https://github.com/su469843/M3U8-Downloader/releases/download/v0.2.1/M3U8.Downloader.Setup.0.2.1.exe",
+  "notes": "No release notes provided.",
+  "url": "https://github.com/su469843/M3U8-Downloader/releases/download/v0.2.3/M3U8.Downloader.Setup.0.2.3.exe",
   "downloads": {
-    "windows": "https://github.com/su469843/M3U8-Downloader/releases/download/v0.2.1/M3U8.Downloader.Setup.0.2.1.exe",
-    "macos": "https://github.com/su469843/M3U8-Downloader/releases/download/v0.2.1/M3U8.Downloader-0.2.1.dmg",
-    "linux": "https://github.com/su469843/M3U8-Downloader/releases/download/v0.2.1/M3U8.Downloader-0.2.1.AppImage"
+    "windows": "https://github.com/su469843/M3U8-Downloader/releases/download/v0.2.3/M3U8.Downloader.Setup.0.2.3.exe",
+    "macos": "https://github.com/su469843/M3U8-Downloader/releases/download/v0.2.3/M3U8.Downloader-0.2.3.dmg",
+    "linux": "https://github.com/su469843/M3U8-Downloader/releases/download/v0.2.3/M3U8.Downloader-0.2.3.AppImage"
   }
 }
