@@ -9,7 +9,11 @@ const { URL } = require('url');
 const { spawn } = require('child_process');
 
 // Set ffmpeg path
-ffmpeg.setFfmpegPath(ffmpegPath);
+let resolvedFfmpegPath = ffmpegPath;
+if (app.isPackaged) {
+    resolvedFfmpegPath = resolvedFfmpegPath.replace('app.asar', 'app.asar.unpacked');
+}
+ffmpeg.setFfmpegPath(resolvedFfmpegPath);
 
 let mainWindow;
 const historyPath = path.join(app.getPath('userData'), 'history.json');
@@ -76,7 +80,7 @@ async function addToHistory(item) {
 // --- IPC Handlers ---
 
 ipcMain.handle('check-env', async () => {
-    return { ffmpegPath };
+    return { ffmpegPath: resolvedFfmpegPath };
 });
 
 ipcMain.on('open-folder', (event, dir) => {

@@ -1,6 +1,6 @@
 {
   "name": "m3u8-downloader",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "M3U8 Downloader Application",
   "main": "electron/main.js",
   "scripts": {
@@ -43,6 +43,10 @@
     "directories": {
       "output": "dist_electron"
     },
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/ffmpeg-static"
+    ],
     "win": {
       "icon": "build/icon.png",
       "target": "nsis"
