@@ -107,6 +107,14 @@ function App() {
             }));
         });
 
+        // Cleanup IPC listeners on unmount
+        return () => {
+            window.electronAPI.removeAllListeners?.('download-started');
+            window.electronAPI.removeAllListeners?.('download-log');
+            window.electronAPI.removeAllListeners?.('download-progress');
+            window.electronAPI.removeAllListeners?.('download-complete');
+            window.electronAPI.removeAllListeners?.('download-error');
+        };
     }, []);
 
     const handleRename = (id, newName) => {
@@ -140,6 +148,13 @@ function App() {
         window.electronAPI.resumeDownload(id);
     };
 
+    const handleRetry = (item) => {
+        // Remove the failed item
+        setDownloads(prev => prev.filter(d => d.id !== item.id));
+        // Start a new download with the same parameters
+        window.electronAPI.startDownload({ url: item.url, fileName: item.title, savePath: item.savePath || '' });
+    };
+
     return (
         <div className="app-container">
             <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
@@ -151,6 +166,7 @@ function App() {
                         onCancel={handleCancel}
                         onPause={handlePause}
                         onResume={handleResume}
+                        onRetry={handleRetry}
                     />
                 )}
                 {activeTab === 'history' && (
@@ -166,7 +182,7 @@ function App() {
 
 // --- Views ---
 
-function DownloaderView({ downloads, onRename, onCancel, onPause, onResume }) {
+function DownloaderView({ downloads, onRename, onCancel, onPause, onResume, onRetry }) {
     const [url, setUrl] = useState('');
     const [fileName, setFileName] = useState('');
     const [savePath, setSavePath] = useState('');
@@ -232,6 +248,7 @@ function DownloaderView({ downloads, onRename, onCancel, onPause, onResume }) {
                         onCancel={onCancel}
                         onPause={onPause}
                         onResume={onResume}
+                        onRetry={onRetry}
                     />
                 ))}
             </div>
@@ -340,12 +357,10 @@ function SettingsView() {
                 {updateStatus && (
                     <div className={`update-box ${updateStatus.type}`}>
                         <div className="update-msg">{updateStatus.text}</div>
-                        {updateStatus.hasUpdate && (
+                        {updateStatus.downloadUrl && (
                             <>
                                 <pre className="changelog">{updateStatus.changelog}</pre>
-                                {updateStatus.downloadUrl && (
-                                    <a href={updateStatus.downloadUrl} target="_blank" className="download-link">点击下载新版本</a>
-                                )}
+                                <a href={updateStatus.downloadUrl} target="_blank" rel="noopener noreferrer" className="download-link">点击下载新版本</a>
                             </>
                         )}
                     </div>
@@ -362,7 +377,7 @@ function SettingsView() {
 }
 
 // Reuse DownloadItem from previous code
-function DownloadItem({ item, onRename, onCancel, onPause, onResume }) {
+function DownloadItem({ item, onRename, onCancel, onPause, onResume, onRetry }) {
     const [showLogs, setShowLogs] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editName, setEditName] = useState(item.title);
@@ -431,6 +446,11 @@ function DownloadItem({ item, onRename, onCancel, onPause, onResume }) {
                                     title={item.isPaused ? "恢复" : "暂停"}
                                 >
                                     {item.isPaused ? '▶️' : '⏸️'}
+                                </button>
+                            )}
+                            {item.phase === 'error' && (
+                                <button className="btn-small btn-retry p-2" onClick={() => onRetry(item)} title="重试">
+                                    🔄
                                 </button>
                             )}
                             <button className="btn-small btn-danger p-2" onClick={() => onCancel(item.id)} title="取消/移除">✕</button>

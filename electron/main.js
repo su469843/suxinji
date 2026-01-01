@@ -308,54 +308,71 @@ class DownloadTask {
             const segmentFiles = [];
             const getSegmentUrl = (segUri) => new URL(segUri, m3u8Url).toString();
 
-            // Task queue
+            // Task queue with retry logic
+            const MAX_RETRIES = 3;
+            const RETRY_DELAY = 1000; // 1 second
+
+            const downloadSegmentWithRetry = async (segUrl, filePath, index) => {
+                let lastError;
+                for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+                    try {
+                        const writer = fs.createWriteStream(filePath);
+                        const response = await axios({
+                            url: segUrl,
+                            method: 'GET',
+                            responseType: 'stream',
+                            timeout: 30000 // 30s timeout per segment
+                        });
+
+                        // Track bytes for speed calculation
+                        response.data.on('data', (chunk) => {
+                            this.downloadedBytes += chunk.length;
+                        });
+
+                        response.data.pipe(writer);
+
+                        return new Promise((resolve, reject) => {
+                            writer.on('finish', () => {
+                                this.downloadedSegments++;
+
+                                // Calculate speed roughly every 500ms
+                                const now = Date.now();
+                                if (now - this.lastSpeedUpdate > 500) {
+                                    const diffBytes = this.downloadedBytes - this.lastBytes;
+                                    const diffTime = (now - this.lastSpeedUpdate) / 1000;
+                                    const speed = this.formatSpeed(diffBytes / diffTime);
+
+                                    this.lastBytes = this.downloadedBytes;
+                                    this.lastSpeedUpdate = now;
+
+                                    const percent = Math.round((this.downloadedSegments / this.totalSegments) * 100);
+                                    this.progress('downloading', percent, speed);
+                                }
+
+                                resolve();
+                            });
+                            writer.on('error', reject);
+                        });
+                    } catch (err) {
+                        lastError = err;
+                        if (attempt < MAX_RETRIES) {
+                            this.log(`分片 ${index} 下载失败 (尝试 ${attempt}/${MAX_RETRIES}): ${err.message}，正在重试...`, 'warn');
+                            await new Promise(r => setTimeout(r, RETRY_DELAY));
+                        }
+                    }
+                }
+                // All retries failed
+                this.log(`分片 ${index} 下载失败，已尝试 ${MAX_RETRIES} 次: ${lastError.message}`, 'error');
+                throw lastError;
+            };
+
             const tasks = manifest.segments.map((seg, index) => async () => {
                 const segUrl = getSegmentUrl(seg.uri);
                 const fileName = `${index}.ts`;
                 const filePath = path.join(this.tempDir, fileName);
                 segmentFiles[index] = filePath;
 
-                try {
-                    const writer = fs.createWriteStream(filePath);
-                    const response = await axios({
-                        url: segUrl,
-                        method: 'GET',
-                        responseType: 'stream'
-                    });
-
-                    // Track bytes for speed calculation
-                    response.data.on('data', (chunk) => {
-                        this.downloadedBytes += chunk.length;
-                    });
-
-                    response.data.pipe(writer);
-
-                    return new Promise((resolve, reject) => {
-                        writer.on('finish', () => {
-                            this.downloadedSegments++;
-
-                            // Calculate speed roughly every 1s
-                            const now = Date.now();
-                            if (now - this.lastSpeedUpdate > 500) {
-                                const diffBytes = this.downloadedBytes - this.lastBytes;
-                                const diffTime = (now - this.lastSpeedUpdate) / 1000;
-                                const speed = this.formatSpeed(diffBytes / diffTime);
-
-                                this.lastBytes = this.downloadedBytes;
-                                this.lastSpeedUpdate = now;
-
-                                const percent = Math.round((this.downloadedSegments / this.totalSegments) * 100);
-                                this.progress('downloading', percent, speed);
-                            }
-
-                            resolve();
-                        });
-                        writer.on('error', reject);
-                    });
-                } catch (err) {
-                    this.log(`分片 ${index} 下载失败: ${err.message}`, 'error');
-                    throw err;
-                }
+                await downloadSegmentWithRetry(segUrl, filePath, index);
             });
 
             // Run batch
@@ -415,15 +432,6 @@ class DownloadTask {
         } catch (err) {
             this.error(`错误: ${err.message}`);
         }
-    }
-
-    parseM3U8(content) {
-        return new Promise((resolve) => {
-            const parser = new m3u8Parser.Parser();
-            parser.push(content);
-            parser.end();
-            resolve(parser.manifest);
-        });
     }
 }
 

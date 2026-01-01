@@ -24,5 +24,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     onLog: (callback) => ipcRenderer.on('download-log', (event, value) => callback(value)),
     onComplete: (callback) => ipcRenderer.on('download-complete', (event, value) => callback(value)),
     onError: (callback) => ipcRenderer.on('download-error', (event, value) => callback(value)),
-    openFolder: (path) => ipcRenderer.send('open-folder', path)
+    openFolder: (path) => ipcRenderer.send('open-folder', path),
+
+    // Cleanup
+    removeAllListeners: (channel) => ipcRenderer.removeAllListeners(channel)
 });
