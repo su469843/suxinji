@@ -11,16 +11,18 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  # 确保镜像名称全小写
-  IMAGE_NAME: ${{ lower(github.repository) }}
+  # 直接手动指定小写名称
+  IMAGE_NAME: "su469843/m3u8-downloader"
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    # 条件判断：手动触发时总是运行，否则检查原有条件
+    # 简化条件判断：移除可能引起问题的 contains() 检查
     if: |
       github.event_name == 'workflow_dispatch' ||
-      (startsWith(github.ref, 'refs/tags/') || contains(github.event.head_commit.message, 'docker-build'))
+      startsWith(github.ref, 'refs/tags/') ||
+      github.ref == 'refs/heads/main' ||
+      github.ref == 'refs/heads/master'
     permissions:
       contents: read
       packages: write
@@ -28,6 +30,13 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Debug information
+        run: |
+          echo "Repository: ${{ github.repository }}"
+          echo "Ref: ${{ github.ref }}"
+          echo "Event name: ${{ github.event_name }}"
+          echo "Image name: ${{ env.IMAGE_NAME }}"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -48,19 +57,33 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
-      - name: Extract metadata for Docker
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-            docker.io/${{ secrets.DOCKER_USERNAME }}/m3u8-downloader
-          tags: |
-            # 手动触发时添加 latest 标签
-            type=raw,value=latest,enable=${{ github.event_name == 'workflow_dispatch' }}
-            type=ref,event=branch
-            type=semver,pattern={{version}}
-            type=sha,format=long
+      - name: Prepare Docker tags
+        id: prepare-tags
+        run: |
+          # 基础镜像名称
+          GHCR_IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+          DOCKERHUB_IMAGE="docker.io/${{ secrets.DOCKER_USERNAME }}/m3u8-downloader"
+          
+          # 根据触发类型决定标签
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            # 手动触发：只使用 latest
+            echo "tags=$GHCR_IMAGE:latest,$DOCKERHUB_IMAGE:latest" >> $GITHUB_OUTPUT
+            echo "labels=org.opencontainers.image.version=latest" >> $GITHUB_OUTPUT
+            echo "Manual trigger - using 'latest' tag"
+          elif [[ "${{ startsWith(github.ref, 'refs/tags/') }}" == "true" ]]; then
+            # 标签推送：使用版本标签
+            TAG_NAME=${GITHUB_REF#refs/tags/}
+            echo "tags=$GHCR_IMAGE:$TAG_NAME,$GHCR_IMAGE:latest,$DOCKERHUB_IMAGE:$TAG_NAME,$DOCKERHUB_IMAGE:latest" >> $GITHUB_OUTPUT
+            echo "labels=org.opencontainers.image.version=$TAG_NAME" >> $GITHUB_OUTPUT
+            echo "Tag push - using '$TAG_NAME' and 'latest' tags"
+          else
+            # 分支推送：使用分支名和提交哈希
+            BRANCH_NAME=${GITHUB_REF#refs/heads/}
+            SHORT_SHA=$(git rev-parse --short HEAD)
+            echo "tags=$GHCR_IMAGE:$BRANCH_NAME,$GHCR_IMAGE:$SHORT_SHA,$DOCKERHUB_IMAGE:$BRANCH_NAME,$DOCKERHUB_IMAGE:$SHORT_SHA" >> $GITHUB_OUTPUT
+            echo "labels=org.opencontainers.image.version=$SHORT_SHA" >> $GITHUB_OUTPUT
+            echo "Branch push - using '$BRANCH_NAME' and '$SHORT_SHA' tags"
+          fi
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -68,5 +91,5 @@ jobs:
           context: .
           push: true
           platforms: linux/amd64,linux/arm64,linux/arm/v7
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.prepare-tags.outputs.tags }}
+          labels: ${{ steps.prepare-tags.outputs.labels }}
