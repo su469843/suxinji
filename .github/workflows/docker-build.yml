@@ -80,9 +80,11 @@ jobs:
           context: .
           push: true
           platforms: linux/amd64,linux/arm64,linux/arm/v7
-          # 根据触发类型选择标签
-          tags: ${{ steps.manual-tags.outputs.tags }}
-          ${{ steps.auto-meta.outputs.tags }}
-          # 根据触发类型选择标签
-          labels: ${{ steps.manual-tags.outputs.labels }}
-          ${{ steps.auto-meta.outputs.labels }}
+          # 根据触发类型选择标签 - 修复这里的语法
+          tags: |
+            ${{ steps.manual-tags.outputs.tags }}
+            ${{ steps.auto-meta.outputs.tags }}
+          # 根据触发类型选择标签 - 修复这里的语法
+          labels: |
+            ${{ steps.manual-tags.outputs.labels }}
+            ${{ steps.auto-meta.outputs.labels }}
