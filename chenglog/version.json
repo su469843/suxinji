@@ -1,7 +1,7 @@
 {
   "version": "0.2.4",
-  "date": "2025-12-28",
-  "notes": "## 修复\n- 1.修复了没有关闭功能\n- 2.修复了下载时没有进度条\n- 3.修复已知问题\n- 4.修复了下载时没有进度条\n\n历史版本",
+  "date": "2026-01-01",
+  "notes": "## 修复\n- 1.修复了没有关闭功能\n- 2.修复了下载时没有进度条\n- 3.修复已知问题\n\n历史版本",
   "url": "https://github.com/su469843/M3U8-Downloader/releases/download/v0.2.4/M3U8.Downloader.Setup.0.2.4.exe",
   "downloads": {
     "windows": "https://github.com/su469843/M3U8-Downloader/releases/download/v0.2.4/M3U8.Downloader.Setup.0.2.4.exe",
