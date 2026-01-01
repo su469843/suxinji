@@ -15,6 +15,7 @@ permissions:
 jobs:
   build:
     runs-on: ${{ matrix.os }}
+    if: startsWith(github.ref, 'refs/tags/') || contains(github.event.head_commit.message, 'build')
 
     strategy:
       matrix:
