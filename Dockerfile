@@ -1,23 +1,32 @@
-# Build stage
-FROM node:20-alpine as build-stage
+FROM node:20-alpine
 
 WORKDIR /app
 
+# 安装必要的系统依赖（如果 ffmpeg-static 不适用，可以在此安装系统 ffmpeg）
+# RUN apk add --no-cache ffmpeg
+
+# 复制 package.json
 COPY package*.json ./
 
-# Install dependencies
+# 安装依赖
 RUN npm ci
 
+# 复制源代码
 COPY . .
 
-# Build the application
+# 构建前端
 RUN npm run build
 
-# Production stage
-FROM nginx:stable-alpine as production-stage
+# 设置环境变量
+ENV PORT=3000
+ENV DOWNLOAD_DIR=/downloads
+ENV TEMP_DIR=/app/temp
 
-COPY --from=build-stage /app/dist /usr/share/nginx/html
+# 暴露端口
+EXPOSE 3000
 
-EXPOSE 80
+# 建立挂载点
+VOLUME ["/downloads"]
 
-CMD ["nginx", "-g", "daemon off;"]
+# 启动服务
+CMD ["node", "server.js"]

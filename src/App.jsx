@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { api, initSocket, removeListeners } from './utils/api';
 
 // --- Sidebar Components ---
 function Sidebar({ activeTab, onTabChange }) {
@@ -35,85 +36,77 @@ function App() {
 
     // Global Listeners
     useEffect(() => {
-        if (!window.electronAPI) return;
-
-        window.electronAPI.onStarted((data) => {
-            setDownloads(prev => {
-                if (prev.find(d => d.id === data.id)) return prev;
-                return [...prev, {
-                    id: data.id,
-                    url: data.url,
-                    title: data.fileName || 'Unknown',
-                    status: '正在初始化...',
-                    progress: 0,
-                    speed: '0 KB/s',
-                    logs: [],
-                    phase: 'init'
-                }];
-            });
-        });
-
-        window.electronAPI.onLog((data) => {
-            setDownloads(prev => prev.map(d => {
-                if (d.id === data.id) {
-                    return { ...d, logs: [...d.logs, { text: data.text, type: data.type, id: Date.now() + Math.random() }] };
-                }
-                return d;
-            }));
-        });
-
-        window.electronAPI.onProgress((data) => {
-            setDownloads(prev => prev.map(d => {
-                if (d.id === data.id) {
-                    let statusText = d.status;
-                    if (data.phase === 'downloading') {
-                        statusText = `下载中: ${data.current} / ${data.total}`;
-                    } else if (data.phase === 'merging') {
-                        statusText = `正在合并 (FFmpeg): ${data.percent}%`;
+        initSocket({
+            onStarted: (data) => {
+                setDownloads(prev => {
+                    if (prev.find(d => d.id === data.id)) return prev;
+                    return [...prev, {
+                        id: data.id,
+                        url: data.url,
+                        title: data.fileName || 'Unknown',
+                        status: '正在初始化...',
+                        progress: 0,
+                        speed: '0 KB/s',
+                        logs: [],
+                        phase: 'init'
+                    }];
+                });
+            },
+            onLog: (data) => {
+                setDownloads(prev => prev.map(d => {
+                    if (d.id === data.id) {
+                        return { ...d, logs: [...d.logs, { text: data.text, type: data.type, id: Date.now() + Math.random() }] };
                     }
-                    return {
-                        ...d,
-                        phase: data.phase,
-                        progress: data.percent,
-                        speed: data.speed,
-                        status: statusText
-                    };
-                }
-                return d;
-            }));
+                    return d;
+                }));
+            },
+            onProgress: (data) => {
+                setDownloads(prev => prev.map(d => {
+                    if (d.id === data.id) {
+                        let statusText = d.status;
+                        if (data.phase === 'downloading') {
+                            statusText = `下载中: ${data.current} / ${data.total}`;
+                        } else if (data.phase === 'merging') {
+                            statusText = `正在合并 (FFmpeg): ${data.percent}%`;
+                        }
+                        return {
+                            ...d,
+                            phase: data.phase,
+                            progress: data.percent,
+                            speed: data.speed,
+                            status: statusText
+                        };
+                    }
+                    return d;
+                }));
+            },
+            onComplete: (data) => {
+                setDownloads(prev => prev.map(d => {
+                    if (d.id === data.id) {
+                        return {
+                            ...d,
+                            status: '已完成!',
+                            progress: 100,
+                            phase: 'complete',
+                            filePath: data.filePath
+                        };
+                    }
+                    return d;
+                }));
+            },
+            onError: (data) => {
+                setDownloads(prev => prev.map(d => {
+                    if (d.id === data.id) {
+                        return { ...d, status: '错误: ' + data.message, phase: 'error' };
+                    }
+                    return d;
+                }));
+            }
         });
 
-        window.electronAPI.onComplete((data) => {
-            setDownloads(prev => prev.map(d => {
-                if (d.id === data.id) {
-                    return {
-                        ...d,
-                        status: '已完成!',
-                        progress: 100,
-                        phase: 'complete',
-                        filePath: data.filePath
-                    };
-                }
-                return d;
-            }));
-        });
-
-        window.electronAPI.onError((data) => {
-            setDownloads(prev => prev.map(d => {
-                if (d.id === data.id) {
-                    return { ...d, status: '错误: ' + data.message, phase: 'error' };
-                }
-                return d;
-            }));
-        });
-
-        // Cleanup IPC listeners on unmount
+        // Cleanup listeners on unmount
         return () => {
-            window.electronAPI.removeAllListeners?.('download-started');
-            window.electronAPI.removeAllListeners?.('download-log');
-            window.electronAPI.removeAllListeners?.('download-progress');
-            window.electronAPI.removeAllListeners?.('download-complete');
-            window.electronAPI.removeAllListeners?.('download-error');
+            removeListeners();
         };
     }, []);
 
@@ -124,12 +117,12 @@ function App() {
             }
             return d;
         }));
-        window.electronAPI.renameDownload(id, newName);
+        api.renameDownload(id, newName);
     };
 
     const handleCancel = (id) => {
         setDownloads(prev => prev.filter(d => d.id !== id));
-        window.electronAPI.cancelDownload(id);
+        api.cancelDownload(id);
     };
 
     const handlePause = (id) => {
@@ -137,7 +130,7 @@ function App() {
             if (d.id === id) return { ...d, isPaused: true, status: '已暂停' };
             return d;
         }));
-        window.electronAPI.pauseDownload(id);
+        api.pauseDownload(id);
     };
 
     const handleResume = (id) => {
@@ -145,14 +138,14 @@ function App() {
             if (d.id === id) return { ...d, isPaused: false, status: '恢复中...' };
             return d;
         }));
-        window.electronAPI.resumeDownload(id);
+        api.resumeDownload(id);
     };
 
     const handleRetry = (item) => {
         // Remove the failed item
         setDownloads(prev => prev.filter(d => d.id !== item.id));
         // Start a new download with the same parameters
-        window.electronAPI.startDownload({ url: item.url, fileName: item.title, savePath: item.savePath || '' });
+        api.startDownload({ url: item.url, fileName: item.title, savePath: item.savePath || '' });
     };
 
     return (
@@ -190,13 +183,13 @@ function DownloaderView({ downloads, onRename, onCancel, onPause, onResume, onRe
     const handleDownload = () => {
         if (!url) return;
         const finalName = fileName.trim() || `video_${Date.now()}`;
-        window.electronAPI.startDownload({ url, fileName: finalName, savePath });
+        api.startDownload({ url, fileName: finalName, savePath });
         setUrl('');
         setFileName('');
     };
 
     const handleSelectDirectory = async () => {
-        const path = await window.electronAPI.selectDirectory();
+        const path = await api.selectDirectory();
         if (path) {
             setSavePath(path);
         }
@@ -264,21 +257,19 @@ function HistoryView() {
     }, []);
 
     const refreshHistory = async () => {
-        if (window.electronAPI) {
-            const list = await window.electronAPI.getHistory();
-            setHistory(list);
-        }
+        const list = await api.getHistory();
+        setHistory(list);
     };
 
     const clearHistory = async () => {
         if (confirm('确定要清空所有历史记录吗？')) {
-            await window.electronAPI.clearHistory();
+            await api.clearHistory();
             refreshHistory();
         }
     };
 
     const openFolder = (path) => {
-        window.electronAPI.openFolder(path);
+        api.openFolder(path);
     };
 
     return (
@@ -311,13 +302,13 @@ function SettingsView() {
     const [updateStatus, setUpdateStatus] = useState(null);
 
     useEffect(() => {
-        window.electronAPI.getAppVersion().then(setAppVersion);
+        api.getAppVersion().then(setAppVersion);
     }, []);
 
     const checkForUpdates = async () => {
         setUpdateStatus({ text: '正在检查更新...', type: 'info' });
 
-        const result = await window.electronAPI.checkForUpdates();
+        const result = await api.checkForUpdates();
 
         if (result.hasUpdate) {
             setUpdateStatus({
@@ -333,7 +324,11 @@ function SettingsView() {
 
     const handleUninstall = () => {
         if (confirm('确定要卸载本程序吗？应用将立即关闭并启动卸载程序。')) {
-            window.electronAPI.runUninstaller();
+            if (window.electronAPI) {
+                window.electronAPI.runUninstaller();
+            } else {
+                alert('浏览器环境下无法卸载');
+            }
         }
     };
 
@@ -390,8 +385,8 @@ function DownloadItem({ item, onRename, onCancel, onPause, onResume, onRetry }) 
     }, [item.logs, showLogs]);
 
     const openFolder = () => {
-        if (item.filePath && window.electronAPI) {
-            window.electronAPI.openFolder(item.filePath);
+        if (item.filePath) {
+            api.openFolder(item.filePath);
         }
     };
 
